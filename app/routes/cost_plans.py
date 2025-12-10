@@ -9,6 +9,7 @@ from app.schemas.cost_plan import (
     CostPlanUpdate,
     CostPlanResponse,
     CostPlanSummary,
+    CostItemCreate,
     CostItemResponse
 )
 
@@ -151,7 +152,7 @@ async def delete_cost_plan(plan_id: str):
 
 
 @router.post("/cost-plans/{plan_id}/items", response_model=CostPlanResponse, status_code=status.HTTP_201_CREATED)
-async def add_cost_item(plan_id: str, item_data: CostItemResponse):
+async def add_cost_item(plan_id: str, item_data: CostItemCreate):
     """Add a cost item to a plan."""
     if plan_id not in cost_plans_db:
         raise HTTPException(
@@ -187,15 +188,11 @@ async def remove_cost_item(plan_id: str, item_id: str):
     
     plan = cost_plans_db[plan_id]
     
-    # Find and remove the item
-    item_found = False
-    for i, item in enumerate(plan.cost_items):
-        if item.id == item_id:
-            plan.cost_items.pop(i)
-            item_found = True
-            break
+    # Filter out the item with the matching ID
+    original_length = len(plan.cost_items)
+    plan.cost_items = [item for item in plan.cost_items if item.id != item_id]
     
-    if not item_found:
+    if len(plan.cost_items) == original_length:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Cost item with ID {item_id} not found in plan {plan_id}"

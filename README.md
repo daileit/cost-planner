@@ -29,6 +29,12 @@ cd cost-planner
 pip install -r requirements.txt
 ```
 
+3. (Optional) Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env to customize settings like CORS_ORIGINS for production
+```
+
 ## Running the Application
 
 Start the development server:
