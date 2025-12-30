@@ -93,8 +93,8 @@ jobs:
       - name: Trigger backend deployment
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if [[ -n "${{ secrets.BACKEND_DEPLOY_WEBHOOK_URL }}" ]]; then
-            curl -X GET "${{ secrets.BACKEND_DEPLOY_WEBHOOK_URL }}?repo=${{ secrets.DOCKERHUB_USERNAME }}&name=cost-planner-backend&tag=${{ steps.backend_deploy_tag.outputs.tag }}"
+          if [[ -n "${{ secrets.DEPLOY_HOOK_URL }}" ]]; then
+            curl -X GET "${{ secrets.DEPLOY_HOOK_URL }}?repo=${{ secrets.DOCKERHUB_USERNAME }}&name=cost-planner-backend&tag=${{ steps.backend_deploy_tag.outputs.tag }}"
           else
             echo "No backend deploy webhook URL set, skipping."
           fi
@@ -113,7 +113,7 @@ jobs:
       - name: Install frontend dependencies
         run: |
           cd frontend
-          npm ci
+          npm install
 
       - name: Run frontend linting
         run: |
@@ -190,8 +190,8 @@ jobs:
       - name: Trigger frontend deployment
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          if [[ -n "${{ secrets.FRONTEND_DEPLOY_WEBHOOK_URL }}" ]]; then
-            curl -X GET "${{ secrets.FRONTEND_DEPLOY_WEBHOOK_URL }}?repo=${{ secrets.DOCKERHUB_USERNAME }}&name=cost-planner-frontend&tag=${{ steps.frontend_deploy_tag.outputs.tag }}"
+          if [[ -n "${{ secrets.DEPLOY_HOOK_URL }}" ]]; then
+            curl -X GET "${{ secrets.DEPLOY_HOOK_URL }}?repo=${{ secrets.DOCKERHUB_USERNAME }}&name=cost-planner-frontend&tag=${{ steps.frontend_deploy_tag.outputs.tag }}"
           else
             echo "No frontend deploy webhook URL set, skipping."
           fi
