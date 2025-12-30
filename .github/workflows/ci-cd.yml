@@ -1,0 +1,191 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run backend tests
+        run: |
+          cd backend
+          # Add test commands here when tests are available
+          echo "Backend tests placeholder"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/cost-planner-backend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend Docker image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/cost-planner-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/cost-planner-backend:buildcache,mode=max
+
+      - name: Set backend deploy tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: backend_deploy_tag
+        run: |
+          TAGS="${{ steps.meta.outputs.tags }}"
+          DEPLOY_TAG=""
+          
+          while IFS= read -r tag; do
+            TAG_NAME="${tag##*:}"
+            if echo "$TAG_NAME" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              DEPLOY_TAG="$TAG_NAME"
+              break
+            fi
+            LAST_TAG="$TAG_NAME"
+          done <<< "$TAGS"
+          
+          if [ -z "$DEPLOY_TAG" ]; then
+            DEPLOY_TAG="${LAST_TAG:-latest}"
+          fi
+          
+          echo "tag=$DEPLOY_TAG" >> $GITHUB_OUTPUT
+          echo "Backend deploy tag: $DEPLOY_TAG"
+
+      - name: Trigger backend deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [[ -n "${{ secrets.BACKEND_DEPLOY_WEBHOOK_URL }}" ]]; then
+            curl -X GET "${{ secrets.BACKEND_DEPLOY_WEBHOOK_URL }}?repo=${{ secrets.DOCKERHUB_USERNAME }}&name=cost-planner-backend&tag=${{ steps.backend_deploy_tag.outputs.tag }}"
+          else
+            echo "No backend deploy webhook URL set, skipping."
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run frontend linting
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/cost-planner-frontend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend Docker image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/cost-planner-frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/cost-planner-frontend:buildcache,mode=max
+
+      - name: Set frontend deploy tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: frontend_deploy_tag
+        run: |
+          TAGS="${{ steps.meta.outputs.tags }}"
+          DEPLOY_TAG=""
+          
+          while IFS= read -r tag; do
+            TAG_NAME="${tag##*:}"
+            if echo "$TAG_NAME" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              DEPLOY_TAG="$TAG_NAME"
+              break
+            fi
+            LAST_TAG="$TAG_NAME"
+          done <<< "$TAGS"
+          
+          if [ -z "$DEPLOY_TAG" ]; then
+            DEPLOY_TAG="${LAST_TAG:-latest}"
+          fi
+          
+          echo "tag=$DEPLOY_TAG" >> $GITHUB_OUTPUT
+          echo "Frontend deploy tag: $DEPLOY_TAG"
+
+      - name: Trigger frontend deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [[ -n "${{ secrets.FRONTEND_DEPLOY_WEBHOOK_URL }}" ]]; then
+            curl -X GET "${{ secrets.FRONTEND_DEPLOY_WEBHOOK_URL }}?repo=${{ secrets.DOCKERHUB_USERNAME }}&name=cost-planner-frontend&tag=${{ steps.frontend_deploy_tag.outputs.tag }}"
+          else
+            echo "No frontend deploy webhook URL set, skipping."
+          fi

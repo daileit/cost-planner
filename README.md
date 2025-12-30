@@ -1,51 +1,128 @@
-# cost-planner
-Python backend to manage cost-sensitive plans in details
+# Cost Planner - Wedding Edition
 
-## Overview
-A FastAPI-based REST API for managing cost-sensitive plans. The API provides endpoints for creating, reading, updating, and deleting cost plans with detailed cost item tracking.
+A full-stack monorepo for managing wedding costs with FastAPI backend and Next.js frontend.
 
-## Features
-- Create and manage cost plans with multiple cost items
-- Track estimated vs actual costs
-- Calculate remaining budget automatically
-- Status management (draft, active, completed, cancelled)
-- RESTful API with automatic OpenAPI documentation
+## 📁 Project Structure
 
-## Requirements
-- Python 3.12+
-- FastAPI
-- Uvicorn
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/daileit/cost-planner.git
-cd cost-planner
+```
+├── .github/workflows/   # CI/CD pipelines
+├── backend/             # FastAPI (Python) - General Cost Planner API
+│   ├── app/
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/            # Next.js (TypeScript) - Wedding Domain UI
+│   ├── src/
+│   ├── Dockerfile
+│   └── package.json
+└── docker-compose.yml   # Local development orchestration
 ```
 
-2. Install dependencies:
+## ✨ Features
+
+### Backend (FastAPI)
+- RESTful API for cost plan management
+- Multiple cost items per plan
+- Estimated vs actual cost tracking
+- Automatic budget calculations
+- Status management (draft/active/completed/cancelled)
+- OpenAPI documentation
+
+### Frontend (Next.js)
+- Wedding-themed UI for cost visualization
+- Real-time budget tracking display
+- Responsive design
+- Direct API integration
+
+## 🚀 Quick Start
+
+### Using Docker Compose (Recommended)
+
 ```bash
+docker-compose up
+```
+
+- Backend: http://localhost:8000 (API docs at /docs)
+- Frontend: http://localhost:3000
+
+### Manual Setup
+
+#### Backend
+```bash
+cd backend
 pip install -r requirements.txt
-```
-
-3. (Optional) Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env to customize settings like CORS_ORIGINS for production
-```
-
-## Running the Application
-
-Start the development server:
-```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at:
-- API: http://localhost:8000
-- Interactive API docs (Swagger UI): http://localhost:8000/docs
-- Alternative API docs (ReDoc): http://localhost:8000/redoc
+#### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## 🔧 Configuration
+
+### Backend Environment Variables
+See `backend/.env.example`:
+- `CORS_ORIGINS`: Allowed origins (use frontend URL in production)
+
+### Frontend Environment Variables
+See `frontend/.env.local.example`:
+- `NEXT_PUBLIC_API_URL`: Backend API URL
+
+## 🐳 Docker Deployment
+
+### Build Images Separately
+```bash
+# Backend
+docker build -t cost-planner-backend ./backend
+
+# Frontend
+docker build -t cost-planner-frontend ./frontend
+```
+
+### Run Containers
+```bash
+# Backend
+docker run -p 8000:8000 cost-planner-backend
+
+# Frontend (with API URL)
+docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://localhost:8000 cost-planner-frontend
+```
+
+## 📦 CI/CD
+
+GitHub Actions workflow (`.github/workflows/ci-cd.yml`) automatically:
+1. Builds both backend and frontend on push to `main`/`develop`
+2. Pushes images to separate DockerHub repositories
+3. Triggers deployment webhooks for production updates
+
+### Required Secrets
+- `DOCKERHUB_USERNAME`: Your DockerHub username
+- `DOCKERHUB_TOKEN`: DockerHub access token
+- `BACKEND_DEPLOY_WEBHOOK_URL`: Backend deployment trigger URL
+- `FRONTEND_DEPLOY_WEBHOOK_URL`: Frontend deployment trigger URL
+- `NEXT_PUBLIC_API_URL`: Production API URL
+
+## 📚 API Documentation
+
+Once running, visit:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+## 🛠️ Development
+
+### Backend Stack
+- Python 3.13
+- FastAPI
+- Pydantic
+- Uvicorn
+
+### Frontend Stack
+- Next.js 14
+- React 18
+- TypeScript
+- App Router
 
 ## API Endpoints
 
