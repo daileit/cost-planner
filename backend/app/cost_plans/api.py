@@ -44,7 +44,7 @@ def model_to_response(plan: CostPlan) -> CostPlanResponse:
     )
 
 
-@router.post("/cost-plans", response=CostPlanResponse, status=201)
+@router.post("/cost-plans", response={201: CostPlanResponse})
 def create_cost_plan(request, plan_data: CostPlanCreate):
     """Create a new cost plan."""
     # Create the cost plan
@@ -66,7 +66,7 @@ def create_cost_plan(request, plan_data: CostPlanCreate):
             category=item_data.category
         )
     
-    return model_to_response(plan)
+    return 201, model_to_response(plan)
 
 
 @router.get("/cost-plans", response=List[CostPlanSummary])
@@ -125,7 +125,7 @@ def delete_cost_plan(request, plan_id: str):
     return 204, None
 
 
-@router.post("/cost-plans/{plan_id}/items", response=CostPlanResponse, status=201)
+@router.post("/cost-plans/{plan_id}/items", response={201: CostPlanResponse})
 def add_cost_item(request, plan_id: str, item_data: CostItemCreate):
     """Add a cost item to a plan."""
     plan = get_object_or_404(CostPlan, id=plan_id)
@@ -139,7 +139,7 @@ def add_cost_item(request, plan_id: str, item_data: CostItemCreate):
         category=item_data.category
     )
     
-    return model_to_response(plan)
+    return 201, model_to_response(plan)
 
 
 @router.delete("/cost-plans/{plan_id}/items/{item_id}", response=CostPlanResponse)
