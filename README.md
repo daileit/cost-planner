@@ -6,8 +6,12 @@ A full-stack monorepo for managing wedding costs with FastAPI backend and Next.j
 
 ```
 ├── .github/workflows/   # CI/CD pipelines
-├── backend/             # FastAPI (Python) - General Cost Planner API
+├── backend/             # Django + Django Ninja - General Cost Planner API
 │   ├── app/
+│   │   ├── cost_plans/  # Django app for cost plans
+│   │   ├── settings.py  # Django settings
+│   │   └── urls.py      # URL routing
+│   ├── manage.py        # Django management script
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/            # Next.js (TypeScript) - Wedding Domain UI
@@ -19,13 +23,15 @@ A full-stack monorepo for managing wedding costs with FastAPI backend and Next.j
 
 ## ✨ Features
 
-### Backend (FastAPI)
+### Backend (Django + Django Ninja)
 - RESTful API for cost plan management
+- Django ORM with SQLite (easily switchable to PostgreSQL/MySQL)
+- Django Admin interface for easy data management
 - Multiple cost items per plan
 - Estimated vs actual cost tracking
 - Automatic budget calculations
 - Status management (draft/active/completed/cancelled)
-- OpenAPI documentation
+- OpenAPI documentation (Swagger UI)
 
 ### Frontend (Next.js)
 - Wedding-themed UI for cost visualization
@@ -41,8 +47,15 @@ A full-stack monorepo for managing wedding costs with FastAPI backend and Next.j
 docker-compose up
 ```
 
-- Backend: http://localhost:8000 (API docs at /docs)
+- Backend API: http://localhost:8000/api/ (API docs at /api/docs)
+- Django Admin: http://localhost:8000/admin/
 - Frontend: http://localhost:3000
+
+**First Time Setup:**
+```bash
+# Create Django superuser for admin access
+docker-compose exec backend python manage.py createsuperuser
+```
 
 ### Manual Setup
 
@@ -50,7 +63,15 @@ docker-compose up
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+
+# Run migrations
+python manage.py migrate
+
+# Create superuser
+python manage.py createsuperuser
+
+# Run server
+python manage.py runserver
 ```
 
 #### Frontend
@@ -63,8 +84,11 @@ npm run dev
 ## 🔧 Configuration
 
 ### Backend Environment Variables
-See `backend/.env.example`:
-- `CORS_ORIGINS`: Allowed origins (use frontend URL in production)
+- `DJANGO_SECRET_KEY`: Django secret key (required in production)
+- `DEBUG`: Debug mode (default: True)
+- `ALLOWED_HOSTS`: Comma-separated allowed hosts (default: *)
+- `CORS_ORIGINS`: Comma-separated allowed origins (default: http://localhost:3000)
+- `CORS_ALLOW_ALL`: Allow all CORS origins (default: False)
 
 ### Frontend Environment Variables
 See `frontend/.env.local.example`:
@@ -84,7 +108,10 @@ docker build -t cost-planner-frontend ./frontend
 ### Run Containers
 ```bash
 # Backend
-docker run -p 8000:8000 cost-planner-backend
+docker run -p 8000:8000 \
+  -e DJANGO_SECRET_KEY=your-secret-key \
+  -e DEBUG=False \
+  cost-planner-backend
 
 # Frontend (with API URL)
 docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://localhost:8000 cost-planner-frontend
@@ -107,16 +134,16 @@ GitHub Actions workflow (`.github/workflows/ci-cd.yml`) automatically:
 ## 📚 API Documentation
 
 Once running, visit:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:8000/api/docs
+- Django Admin: http://localhost:8000/admin/
 
 ## 🛠️ Development
 
 ### Backend Stack
 - Python 3.13
-- FastAPI
-- Pydantic
-- Uvicorn
+- Django 5.0
+- Django Ninja (FastAPI-style API framework)
+- Gunicorn
 
 ### Frontend Stack
 - Next.js 14
