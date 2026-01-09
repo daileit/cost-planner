@@ -21,22 +21,22 @@ export default function Home() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
   useEffect(() => {
-    fetchPlans()
-  }, [])
-
-  const fetchPlans = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/v1/cost-plans`)
-      if (!response.ok) throw new Error('Failed to fetch plans')
-      const data = await response.json()
-      setPlans(data)
-      setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
+    const fetchPlans = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/v1/cost-plans`)
+        if (!response.ok) throw new Error('Failed to fetch plans')
+        const data = await response.json()
+        setPlans(data)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+
+    fetchPlans()
+  }, [API_URL])
 
   return (
     <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
